@@ -1,0 +1,76 @@
+substitutions:
+  devicename: "lctech-4relay-test"
+  shared_secret: "XXX_CHANGEME_XXX"
+
+wifi:
+  ssid: "XXX_CHANGEME_XXX"
+  password: "XXX_CHANGEME_XXX"
+
+ota:
+  safe_mode: True
+  password: $shared_secret
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp01_1m
+  build_path: build/$devicename
+  includes:
+    - src/lctech-relay.h
+
+api:
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+web_server:
+  port: 80
+  auth:
+    username: admin
+    password: $shared_secret
+
+time:
+- platform: homeassistant
+
+sensor:
+  - platform: wifi_signal
+    name: "${devicename}: WiFi Signal"
+    update_interval: 60s
+
+uart:
+  id: uart0
+  baud_rate: 115200
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+
+custom_component:
+- lambda: |-
+    auto h0 = new LCTechMultiRelayBus(id(uart0));
+    App.register_component(h0);
+    return {h0};
+  components:
+    - id: lctech1_bus
+
+switch:
+- platform: custom
+  lambda: |-
+    auto r1 = new LCTechRelay((LCTechMultiRelayBus*) id(lctech1_bus), 1);
+    auto r2 = new LCTechRelay((LCTechMultiRelayBus*) id(lctech1_bus), 2);
+    auto r3 = new LCTechRelay((LCTechMultiRelayBus*) id(lctech1_bus), 3);
+    auto r4 = new LCTechRelay((LCTechMultiRelayBus*) id(lctech1_bus), 4);
+    App.register_component(r1);
+    App.register_component(r2);
+    App.register_component(r3);
+    App.register_component(r4);
+    return {r1, r2, r3, r4};
+  switches:
+    - name: "${devicename}: Relay 1"
+      id: lctech1_relay1
+    - name: "${devicename}: Relay 2"
+      id: lctech1_relay2
+    - name: "${devicename}: Relay 3"       
+      id: lctech1_relay3
+    - name: "${devicename}: Relay 4"
+      id: lctech1_relay4
+  
